@@ -76,38 +76,38 @@ module RegFile(clk,reset,ReadReg1,ReadReg2,WriteReg,WriteData,RegWrite,ReadData1
 	input [31:0] WriteData;
 	input [1:0] ReadReg1,ReadReg2,WriteReg;
 	wire [3:0] regclk,decreg;
-	wire [31:0] q1,q2,q3,q0;
+	wire [3:0] [31:0] q;
 	genvar j;
 	decoder2_4 d(decreg,WriteReg);
 	generate for (j=0;j<4;j=j+1) begin: regbuild
 		and aj(regclk[j],decreg[j],RegWrite,clk);
+		reg_32bit rj(q[j],WriteData,regclk[j],reset);
 	end
 	endgenerate
-	reg_32bit r0(q0,WriteData,regclk[0],reset);
-	reg_32bit r1(q1,WriteData,regclk[1],reset);
-	reg_32bit r2(q2,WriteData,regclk[2],reset);
-	reg_32bit r3(q3,WriteData,regclk[3],reset);
-	mux4_1 m1(ReadData1,q0,q1,q2,q3,ReadReg1);
-	mux4_1 m2(ReadData2,q0,q1,q2,q3,ReadReg2);
+	mux4_1 m1(ReadData1,q[0],q[1],q[2],q[3],ReadReg1);
+	mux4_1 m2(ReadData2,q[0],q[1],q[2],q[3],ReadReg2);
 endmodule
 
 
 module tbm41();
-reg [31:0] r1,r2,r3,r4;
-reg [1:0] rn;
-wire[31:0] rD;
-mux4_1 M41(rD,r1,r2,r3,r4,rn);
+reg clk,rst,rw;
+reg [1:0] rr1,rr2,w;
+wire [31:0] rd1,rd2;
+reg[31:0] wd;
+RegFile r1(clk,rst,rr1,rr2,w,wd,rw,rd1,rd2);           
 initial
 begin 
-$monitor(,$time,"out = %b, reset=%b",rD,rn);
-r1 = 32'b11001100110011001100110011001100;
-r2 = 32'b11110000111100001111000011110000;
-r3 = 32'b11111111000000001111111100000000;
-r4 = 32'b11111111111111110000000000000000;
-#5 rn = 2'b00;
-#10 rn = 2'b10;
-#10 rn = 2'b11;
-#5 rn = 2'b01;
+$monitor(,$time,"r1=%b r2=%b reset=%b, w=%b, d=%h, rd1=%h, rd2=%h rw=%b",rr1,rr2,rst,w,wd,rd1,rd2,rw);
+rst = 1'b0; clk=1'b0;rw=1'b0; rr1=2'b01;rr2=2'b10;
+#30 rst = 1'b1; wd=32'hAFAFAFAF; w=2'b10;
+#10 rw=1'b1; 
+#15 w=2'b01;
+#20 wd=32'hFAFAFAFA;
+#10 rst=1'b0;
 #200 $finish;
+end
+always
+begin
+#7 clk = ~clk;
 end
 endmodule
